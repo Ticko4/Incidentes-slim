@@ -34,14 +34,58 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($db, $secret, $bu
 			return $response;
 		});
 		//Get All Events
-		$group->get('/get', function (Request $request, Response $response, $args) use ($builder, $secret, $db) {
+		$group->post('/get', function (Request $request, Response $response, $args) use ($builder, $secret, $db) {
 			require __DIR__ . '/../db/dbconnect.php';
-			$result = $db->events;
+			$post = $request->getParsedBody();
+			$payload = json_decode(base64_decode($post['payload']),true);
+			$c0 = $payload['0'];
+			$c1 = $payload['1'];
+			$c2 = $payload['2'];
+			$c3 = $payload['3'];
+			$c4 = $payload['4'];
+
 			$data = [];
-			foreach ($result as $item){
-				$data[] = $item;
-				$item['status'] = $item->status;
+
+			if($c0){
+				$result1 = $db->events()->where('type',0);
+				foreach ($result1 as $item){
+					$data[] = $item;
+					$item['status'] = $item->status;
+				}
 			}
+
+			if($c1){
+				$result2 = $db->events()->where('type',1);
+				foreach ($result2 as $item){
+					$data[] = $item;
+					$item['status'] = $item->status;
+				}
+			}
+
+			if($c2){
+				$result3 = $db->events()->where('type',2);
+				foreach ($result3 as $item){
+					$data[] = $item;
+					$item['status'] = $item->status;
+				}
+			}
+
+			if($c3){
+				$result4 = $db->events()->where('type',3);
+				foreach ($result4 as $item){
+					$data[] = $item;
+					$item['status'] = $item->status;
+				}
+			}
+
+			if($c4){
+				$result5 = $db->events()->where('type',4);
+				foreach ($result5 as $item){
+					$data[] = $item;
+					$item['status'] = $item->status;
+				}
+			}
+
 			$response->getBody()->write(json_encode($data));
 			return $response;
 		});
@@ -56,6 +100,7 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($db, $secret, $bu
 			$longitude = $payload['longitude'];
 			$photo = $payload['photo'];
 			$description = $payload['description'];
+			$type = $payload['type'];
 
 			$data = array (
 				"photo" => $photo,
@@ -66,43 +111,47 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($db, $secret, $bu
 				"description" => $description,
 				"status_id" => 4,
 				"date" => date("d/m/Y"),
-				"time" => date("h:i")
+				"time" => date("h:i"),
+				"type" => $type
 			);
 			$result = $db->events()->insert($data);
 			$response->getBody()->write(json_encode($result));
 			return $response;
 		})->add(JwtMiddleware::json($secret, 'jwt', ['Authorisation Failed']));
 		//Delete Event by id
-		$group->delete('/delete', function (Request $request, Response $response, $args) use ($builder, $secret, $db) {
+		$group->post('/delete', function (Request $request, Response $response, $args) use ($builder, $secret, $db) {
 			require __DIR__ . '/../db/dbconnect.php';
 			$post = $request->getParsedBody();
 			$id = $post['id'];
 			$user_id = $post['user_id'];
-			//$result = $db->events[$id]->delete();
-			$result = $db->events()->where([["user_id",$user_id],['id',$id]])->delete();
+			$result = $db->events()->where("user_id",$user_id)->where('id',$id)->limit(1)->fetch();
+			$result->delete();
 			$response->getBody()->write(json_encode($result));
 			return $response;
 		})->add(JwtMiddleware::json($secret, 'jwt', ['Authorisation Failed']));
 		//Update Event
-		$group->put('/update', function (Request $request, Response $response, $args) use ($builder, $secret, $db) {
+		$group->post('/update', function (Request $request, Response $response, $args) use ($builder, $secret, $db) {
 			require __DIR__ . '/../db/dbconnect.php';
 
 			$post = $request->getParsedBody();
-			$id = $post['id'];
-			$location = $post['location'];
-			$latitude = $post['latitude'];
-			$longitude = $post['longitude'];
-			$image = $post['image'];
-			$description = $post['description'];
+			$payload = json_decode(base64_decode($post['payload']),true);
+
+			$id = $payload['id'];
+			$description = $payload['description'];
+			$type = $payload['type'];
+			$user_id = $payload['user_id'];
 			$data = array (
 				"id" => $id,
-				"location" => $location,
-				"latitude" => $latitude,
-				"longitude" => $longitude,
-				"image" => $image,
+				"type" => $type,
 				"description" => $description,
 			);
-			$result = $db->marks[$id]->update($data);
+			$result = $db->events()->where("id",$id)->where("user_id",$user_id)->limit(1)->fetch();
+			$result->update($data);
+			if($result){
+				$result['status'] = $result['status_id'];
+				$result['type'] = $data['type'];
+				$result['description'] = $data['description'];
+			}
 			$response->getBody()->write(json_encode($result));
 			return $response;
 		})->add(JwtMiddleware::json($secret, 'jwt', ['Authorisation Failed']));

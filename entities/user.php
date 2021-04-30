@@ -13,6 +13,19 @@ $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . "/../");
 $dotenv->load();
 $secret = $_ENV['JWT_SECRET'];
 
+function dfCurl($url){
+	$ch     =   curl_init($url);
+	$dir            =   '/../encryption';
+	$fileName       =   basename($url);
+	$saveFilePath   =   $dir . $fileName;
+	$fp             =   fopen($saveFilePath, 'wb');
+	curl_setopt($ch, CURLOPT_FILE, $fp);
+	curl_setopt($ch, CURLOPT_HEADER, 0);
+	curl_exec($ch);
+	curl_close($ch);
+	fclose($fp);
+}
+
 $app->group('/api', function (RouteCollectorProxy $group) use ($db, $secret, $builder, $app) {
 	$group->group('/user', function (RouteCollectorProxy $group) use ($db, $secret, $builder, $app) {
 		//Login user and return token if success
